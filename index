@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejamento Patrimonial V3 - Premium</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1F3A5F;
+            --secondary: #2E5C8A;
+            --accent: #4A90D9;
+            --bg: #F5F7FA;
+            --white: #FFFFFF;
+            --success: #27AE60;
+            --alerta: #E67E22;
+            --erro: #C0392B;
+            --border: #D1D9E6;
+            --text: #333333;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+
+        /* Typography & Formats */
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        .negative { color: var(--erro); font-weight: 600; }
+        .negative::before { content: '('; }
+        .negative::after { content: ')'; }
+
+        /* Layout */
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 1rem 2rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+        }
+        
+        .nav-bar {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            overflow-x: auto;
+            position: sticky;
+            top: 60px;
+            z-index: 99;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            font-weight: 500;
+            color: var(--secondary);
+            transition: 0.2s;
+        }
+
+        .nav-item:hover { background: #f0f4f8; }
+        .nav-item.active { border-color: var(--accent); color: var(--accent); }
+
+        .container { padding: 2rem; max-width: 1400px; margin: 0 auto; min-height: 80vh; }
+        .card { 
+            background: var(--white); 
+            border-radius: 8px; 
+            padding: 1.5rem; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        /* Tabs Visibility */
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Forms & Tables */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--primary); }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 0.6rem; 
+            border: 1px solid var(--border); 
+            border-radius: 4px; 
+            font-size: 0.95rem;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        th { background: #f8fafc; text-align: left; padding: 0.8rem; border-bottom: 2px solid var(--border); color: var(--primary); }
+        td { padding: 0.8rem; border-bottom: 1px solid var(--border); }
+        tr:hover { background: #fdfdfd; }
+
+        /* Dashboard specific */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: var(--white); padding: 1.5rem; border-radius: 8px; border-left: 5px solid var(--accent); }
+        .kpi-label { font-size: 0.8rem; color: #666; text-transform: uppercase; font-weight: 600;}
+        .kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-top: 0.5rem; }
+
+        /* Buttons */
+        .btn { 
+            padding: 0.6rem 1.2rem; 
+            border-radius: 4px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.5rem;
+            transition: 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--erro); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--primary); }
+        .btn:hover { filter: brightness(1.1); }
+
+        /* Badges */
+        .badge { padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+        .badge-success { background: #e8f5e9; color: var(--success); }
+        .badge-warning { background: #fff3e0; color: var(--alerta); }
+        .badge-danger { background: #ffebee; color: var(--erro); }
+
+        /* Print Style */
+        @media print {
+            header, .nav-bar, .no-print, .btn { display: none !important; }
+            body { background: white; }
+            .container { padding: 0; max-width: 100%; }
+            .card { box-shadow: none; border: 1px solid #eee; break-inside: avoid; }
+            .tab-content { display: block !important; }
+            .nav-item { display: none; }
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <i data-lucide="briefcase"></i>
+        <h2 style="margin: 0; font-size: 1.2rem;">Planejamento Patrimonial <span style="font-weight: 300;">v3.0</span></h2>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <span id="current-client-name" style="font-size: 0.9rem; margin-right: 15px;">Nenhum cliente selecionado</span>
+        <button class="btn btn-outline" style="color: white; border-color: rgba(255,255,255,0.3);" onclick="exportData()">
+            <i data-lucide="download" size="16"></i> Exportar
+        </button>
+        <button class="btn btn-outline" style="color: white; border-color: rgba(255,255,255,0.3);" onclick="document.getElementById('importFile').click()">
+            <i data-lucide="upload" size="16"></i> Importar
+        </button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
+</header>
+
+<div class="nav-bar no-print">
+    <div class="nav-item active" onclick="showTab('tab-clientes', this)">Clientes</div>
+    <div class="nav-item" onclick="showTab('tab-dashboard', this)">Dashboard</div>
+    <div class="nav-item" onclick="showTab('tab-dados', this)">Dados</div>
+    <div class="nav-item" onclick="showTab('tab-patrimonio', this)">Patrimônio</div>
+    <div class="nav-item" onclick="showTab('tab-sucessao', this)">Sucessão</div>
+    <div class="nav-item" onclick="showTab('tab-riscos', this)">Riscos & Seguros</div>
+    <div class="nav-item" onclick="showTab('tab-evolucao', this)">Evolução</div>
+    <div class="nav-item" onclick="showTab('tab-fluxo', this)">Fluxo de Caixa</div>
+</div>
+
+<div class="container">
+    
+    <div id="tab-clientes" class="tab-content active">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3>Meus Clientes</h3>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" onclick="loadTestClient()">Carregar Exemplo (FABIANO + DELMA)</button>
+                <button class="btn btn-primary" onclick="createNewClient()">+ Novo Cliente</button>
+            </div>
+        </div>
+        <div id="client-grid" class="grid">
+            </div>
+    </div>
+
+    <div id="tab-dashboard" class="tab-content">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Patrimônio Líquido Total</div>
+                <div id="kpi-patr-total" class="kpi-value tabular-nums">R$ 0,00</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: var(--erro);">
+                <div class="kpi-label">Custos Estimados de Sucessão</div>
+                <div id="kpi-custo-sucessao" class="kpi-value tabular-nums">R$ 0,00</div>
+                <div id="kpi-custo-pct" style="font-size: 0.8rem; color: var(--erro); margin-top: 4px; font-weight: 500;">0% do patrimônio</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: var(--alerta);">
+                <div class="kpi-label">Gap Total de Proteção</div>
+                <div id="kpi-gap-seguro" class="kpi-value tabular-nums">R$ 0,00</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: var(--success);">
+                <div class="kpi-label">Sobra Mensal Estimada</div>
+                <div id="kpi-sobra-mensal" class="kpi-value tabular-nums">R$ 0,00</div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 2fr;">
+            <div class="card">
+                <h4 style="margin-top:0; color: var(--primary);">Composição Patrimonial</h4>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="chart-patrimonio"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h4 style="margin-top:0; color: var(--primary);">Evolução Patrimonial (Projeção)</h4>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="chart-evolucao"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-dados" class="tab-content">
+        <div class="grid">
+            <div class="card">
+                <h4>Titular</h4>
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="in-nome-titular" onchange="updateClientData('nomeTitular', this.value)">
+                </div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                        <label>Data Nascimento</label>
+                        <input type="date" id="in-nasc-titular" onchange="updateClientData('dataNascTitular', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Profissão</label>
+                        <input type="text" id="in-prof-titular" onchange="updateClientData('profissaoTitular', this.value)">
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h4>Cônjuge / Companheiro(a)</h4>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="in-tem-conjuge" style="width: auto;" onchange="updateClientData('temConjuge', this.checked)">
+                    <label style="margin:0">Possui cônjuge?</label>
+                </div>
+                <div id="conjuge-fields">
+                    <div class="form-group">
+                        <label>Nome Cônjuge</label>
+                        <input type="text" id="in-nome-conjuge" onchange="updateClientData('nomeConjuge', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Regime de Bens</label>
+                        <select id="in-regime" onchange="updateClientData('regimeCasamento', this.value)">
+                            <option value="comunhao_parcial">Comunhão Parcial de Bens</option>
+                            <option value="comunhao_universal">Comunhão Universal</option>
+                            <option value="separacao_total">Separação Total</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h4>Localização & Econômicos</h4>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Estado (UF para ITCMD)</label>
+                    <select id="in-uf" onchange="updateClientData('estado', this.value)">
+                        <option value="MG">Minas Gerais (5%)</option>
+                        <option value="SP">São Paulo (4%)</option>
+                        <option value="RJ">Rio de Janeiro (6%)</option>
+                        <option value="ES">Espírito Santo (4%)</option>
+                        <option value="SC">Santa Catarina (5%)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cotação Dólar (R$)</label>
+                    <input type="number" step="0.01" id="in-cotacao" onchange="updateClientData('cotacaoExterior', this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-patrimonio" class="tab-content">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Ativos e Bens</h3>
+                <button class="btn btn-primary" onclick="addAsset()">+ Adicionar Ativo</button>
+            </div>
+            <div id="assets-summary" style="margin: 1rem 0; padding: 1rem; background: #f0f7ff; border-radius: 4px; font-size: 0.9rem;">
+                </div>
+            <div style="overflow-x: auto;">
+                <table id="table-assets">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Val. Declarado</th>
+                            <th>Val. Mercado</th>
+                            <th>Ano Aquisição</th>
+                            <th>Meação?</th>
+                            <th>Titularidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-assets"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-sucessao" class="tab-content">
+        <div class="grid">
+            <div class="card">
+                <h4 style="color: var(--secondary)">Custos Sucessão: Titular</h4>
+                <div id="suc-titular-detalhe" class="kpi-value tabular-nums" style="font-size: 1.8rem;">R$ 0,00</div>
+                <p style="font-size: 0.85rem; color: #666;">Inclui meação + bens particulares</p>
+            </div>
+            <div class="card">
+                <h4 style="color: var(--secondary)">Custos Sucessão: Cônjuge</h4>
+                <div id="suc-conjuge-detalhe" class="kpi-value tabular-nums" style="font-size: 1.8rem;">R$ 0,00</div>
+                <p style="font-size: 0.85rem; color: #666;">Considera apenas a meação</p>
+            </div>
+            <div class="card" style="background: var(--primary); color: white;">
+                <h4>TOTAL ESTIMADO</h4>
+                <div id="suc-total-final" class="kpi-value tabular-nums" style="font-size: 2.2rem; color: white;">R$ 0,00</div>
+                <p style="opacity: 0.8; font-size: 0.85rem;">Custo total do casal para inventário</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>Configuração de Custos (%)</h4>
+            <div class="grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="form-group">
+                    <label>ITCMD (%)</label>
+                    <input type="number" step="0.1" id="cfg-itcmd" onchange="updateSucCfg('itcmd', this.value)">
+                </div>
+                <div class="form-group">
+                    <label>Honorários Adv. (%)</label>
+                    <input type="number" step="0.1" id="cfg-adv" onchange="updateSucCfg('honorarioAdvogado', this.value)">
+                </div>
+                <div class="form-group">
+                    <label>Cartórios (%)</label>
+                    <input type="number" step="0.01" value="0.43" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-evolucao" class="tab-content">
+        <div class="grid" style="grid-template-columns: 1fr 3fr;">
+            <div class="card">
+                <h4>Premissas Financeiras</h4>
+                <div class="form-group">
+                    <label>Juro Nominal (% a.a.)</label>
+                    <input type="number" step="0.1" id="ev-juro" onchange="updateEvCfg('juroNominalAA', this.value/100)">
+                </div>
+                <div class="form-group">
+                    <label>Inflação (% a.a.)</label>
+                    <input type="number" step="0.1" id="ev-infla" onchange="updateEvCfg('inflacaoAA', this.value/100)">
+                </div>
+                <div class="form-group">
+                    <label>IR sobre Rendim. (%)</label>
+                    <input type="number" step="0.1" id="ev-ir" value="15" onchange="updateEvCfg('fatorTributacaoIR', this.value/100)">
+                </div>
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 4px; margin-top: 1rem;">
+                    <small>Juro Real Liquido:</small>
+                    <div id="calc-juro-real" style="font-weight: 700; color: var(--success);">0,00%</div>
+                </div>
+            </div>
+            <div class="card">
+                <h4>Projeção Ano a Ano</h4>
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Idade</th>
+                                <th>Ano</th>
+                                <th>Patr. Inicial</th>
+                                <th>Aporte Anual</th>
+                                <th>Rendimento</th>
+                                <th>Patr. Final</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-evolucao" class="tabular-nums"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-fluxo" class="tab-content">
+        <div class="grid">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="color: var(--success)">Receitas Mensais</h4>
+                    <button class="btn btn-outline" onclick="addItem('receitas')">+</button>
+                </div>
+                <table id="table-receitas">
+                    <tbody id="body-receitas"></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="color: var(--erro)">Despesas Mensais</h4>
+                    <button class="btn btn-outline" onclick="addItem('despesas')">+</button>
+                </div>
+                <table id="table-despesas">
+                    <tbody id="body-despesas"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-riscos" class="tab-content">
+        <div class="card">
+            <h3>Necessidade de Proteção (Seguros)</h3>
+            <p>Calculado automaticamente com base no custo de inventário e renda familiar.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cobertura</th>
+                        <th>Cálculo Base</th>
+                        <th>Necessidade (R$)</th>
+                        <th>Contratado (R$)</th>
+                        <th>Gap</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="body-riscos" class="tabular-nums"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast">Mensagem</div>
+
+<script>
+/* ==========================================================================
+   CONFIGURAÇÃO GLOBAL DE GRÁFICOS
+   ========================================================================== */
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = '#64748b'; 
+Chart.defaults.scale.grid.color = '#e2e8f0'; 
+
+function formatAbreviado(value) {
+    if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1).replace('.0', '') + ' M';
+    if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(0) + ' mil';
+    return 'R$ ' + value;
+}
+
+/* ==========================================================================
+   MODELO DE DADOS & MOTOR DE CÁLCULO
+   ========================================================================== */
+
+let state = {
+    clients: [],
+    activeClientId: null
+};
+
+const ITCMD_DEFAULT = { 'MG': 0.05, 'SP': 0.04, 'RJ': 0.06, 'default': 0.04 };
+const CARTORIO_PCT = 0.0043;
+
+// FIX: Gerador de ID seguro para rodar em arquivos locais (file://)
+function generateSafeID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+function createNewClient() {
+    const newClient = {
+        id: generateSafeID(),
+        atualizadoEm: new Date().toISOString(),
+        dados: {
+            nomeTitular: 'Novo Cliente', dataNascTitular: '1980-01-01', profissaoTitular: '',
+            temConjuge: false, nomeConjuge: '', regimeCasamento: 'comunhao_parcial',
+            dependentes: [], estado: 'MG', cotacaoExterior: 5.20
+        },
+        ativos: [],
+        receitas: [{ id: 1, categoria: 'salario', titular: 'titular', descricao: 'Salário Base', valorMensal: 10000 }],
+        despesas: [{ id: 1, categoria: 'moradia', natureza: 'fixa', descricao: 'Custo Vida', valorMensal: 7000 }],
+        seguros: [],
+        sucessaoConfig: { honorarioAdvogado: 5.0, taxStateExterior: 0.18 },
+        evolucaoConfig: { 
+            juroNominalAA: 0.12, inflacaoAA: 0.045, fatorTributacaoIR: 0.15, 
+            idadeFinal: 100, usarPatrimInicialDoPatrimonio: true 
+        }
+    };
+    state.clients.push(newClient);
+    setActiveClient(newClient.id);
+    showToast("Novo cliente criado");
+}
+
+/* MATEMÁTICA FINANCEIRA */
+function juroRealAA(nominal, infla) { return (1 + nominal) / (1 + infla) - 1; }
+function fv(taxa, nper, pmt, pv) {
+    if (taxa === 0) return -(pv + pmt * nper);
+    const fator = Math.pow(1 + taxa, nper);
+    return -(pv * fator + pmt * ((fator - 1) / taxa));
+}
+
+function calcularIdade(dataNasc) {
+    if (!dataNasc) return 0;
+    const hj = new Date();
+    const nasc = new Date(dataNasc);
+    let idade = hj.getFullYear() - nasc.getFullYear();
+    if (hj.getMonth() < nasc.getMonth() || (hj.getMonth() == nasc.getMonth() && hj.getDate() < nasc.getDate())) idade--;
+    return idade;
+}
+
+function fmtBRL(val) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+}
+
+function getActiveClient() {
+    return state.clients.find(c => c.id === state.activeClientId);
+}
+
+/* MOTOR DE SUCESSÃO */
+function calcularSucessao(c) {
+    if (!c) return {};
+    const patrimComMeacao = c.ativos.filter(a => a.meacao).reduce((s, a) => s + a.valorMercado, 0);
+    const patrimPartTitular = c.ativos.filter(a => !a.meacao && a.titular === 'titular').reduce((s, a) => s + a.valorMercado, 0);
+    const patrimPartConjuge = c.ativos.filter(a => !a.meacao && a.titular === 'conjuge').reduce((s, a) => s + a.valorMercado, 0);
+
+    const baseTitular = (patrimComMeacao * 0.5) + patrimPartTitular;
+    const baseConjuge = c.dados.temConjuge ? (patrimComMeacao * 0.5) + patrimPartConjuge : 0;
+
+    const aliqITCMD = ITCMD_DEFAULT[c.dados.estado] || ITCMD_DEFAULT.default;
+    const aliqTotal = aliqITCMD + CARTORIO_PCT + (c.sucessaoConfig.honorarioAdvogado / 100);
+
+    return {
+        custoTitular: baseTitular * aliqTotal,
+        custoConjuge: baseConjuge * aliqTotal,
+        total: (baseTitular + baseConjuge) * aliqTotal,
+        patrimonioLiquido: c.ativos.reduce((s, a) => s + a.valorMercado, 0)
+    };
+}
+
+/* ==========================================================================
+   INTERFACE & RENDERIZAÇÃO
+   ========================================================================== */
+
+// FIX: Removido o uso de `event` global para não quebrar a aplicação.
+function showTab(tabId, element = null) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.add('active');
+
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // Se chamado via código (ex: após criar cliente), encontra a aba pelo ID
+        const tabMap = {
+            'tab-clientes': 0, 'tab-dashboard': 1, 'tab-dados': 2,
+            'tab-patrimonio': 3, 'tab-sucessao': 4, 'tab-riscos': 5,
+            'tab-evolucao': 6, 'tab-fluxo': 7
+        };
+        const navItems = document.querySelectorAll('.nav-item');
+        if (tabMap[tabId] !== undefined && navItems[tabMap[tabId]]) {
+            navItems[tabMap[tabId]].classList.add('active');
+        }
+    }
+    renderActiveTab(tabId);
+}
+
+function renderActiveTab(id) {
+    const c = getActiveClient();
+    if (!c && id !== 'tab-clientes') return;
+
+    if (id === 'tab-clientes') renderClients();
+    if (id === 'tab-dashboard') renderDashboard(c);
+    if (id === 'tab-dados') renderDados(c);
+    if (id === 'tab-patrimonio') renderPatrimonio(c);
+    if (id === 'tab-sucessao') renderSucessao(c);
+    if (id === 'tab-evolucao') renderEvolucao(c);
+    if (id === 'tab-fluxo') renderFluxo(c);
+    if (id === 'tab-riscos') renderRiscos(c);
+    
+    if(window.lucide) lucide.createIcons();
+}
+
+function renderClients() {
+    const grid = document.getElementById('client-grid');
+    grid.innerHTML = state.clients.map(c => `
+        <div class="card" style="cursor:pointer; border-top: 4px solid var(--accent);" onclick="setActiveClient('${c.id}')">
+            <h4 style="margin:0">${c.dados.nomeTitular}</h4>
+            <p style="font-size: 0.8rem; color: #666;">${c.dados.estado} | ${calcularIdade(c.dados.dataNascTitular)} anos</p>
+            <div style="margin-top: 10px; font-weight: 700; color: var(--primary); font-size: 1.1rem;">
+                ${fmtBRL(c.ativos.reduce((s, a) => s + a.valorMercado, 0))}
+            </div>
+            <div style="display:flex; gap: 5px; margin-top: 10px;">
+                <button class="btn btn-danger" style="padding: 2px 8px; font-size: 10px;" onclick="deleteClient('${c.id}', event)">Excluir</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function setActiveClient(id) {
+    state.activeClientId = id;
+    const c = getActiveClient();
+    document.getElementById('current-client-name').innerText = c.dados.nomeTitular;
+    showTab('tab-dashboard');
+    save();
+}
+
+function renderDashboard(c) {
+    const suc = calcularSucessao(c);
+    const recTotal = c.receitas.reduce((s, r) => s + r.valorMensal, 0);
+    const desTotal = c.despesas.reduce((s, d) => s + d.valorMensal, 0);
+
+    document.getElementById('kpi-patr-total').innerText = fmtBRL(suc.patrimonioLiquido);
+    document.getElementById('kpi-custo-sucessao').innerText = fmtBRL(suc.total);
+    document.getElementById('kpi-custo-pct').innerText = ((suc.total / (suc.patrimonioLiquido || 1)) * 100).toFixed(1) + "% do patrimônio";
+    document.getElementById('kpi-sobra-mensal').innerText = fmtBRL(recTotal - desTotal);
+
+    const ctx = document.getElementById('chart-patrimonio').getContext('2d');
+    if (window.myChartPatr) window.myChartPatr.destroy();
+    
+    const tipos = [...new Set(c.ativos.map(a => a.tipo))];
+    const valores = tipos.map(t => c.ativos.filter(a => a.tipo === t).reduce((s, a) => s + a.valorMercado, 0));
+    
+    const premiumPalette = ['#1F3A5F', '#3B6B9E', '#7A9EBF', '#B3C6D9', '#D9E2EC', '#F0F4F8'];
+
+    window.myChartPatr = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: tipos.map(t => t.replace('_', ' ').toUpperCase()),
+            datasets: [{ 
+                data: valores, 
+                backgroundColor: premiumPalette.slice(0, tipos.length),
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: { 
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%', 
+            plugins: { 
+                legend: { 
+                    position: 'bottom',
+                    labels: { padding: 20, usePointStyle: true, pointStyle: 'circle' }
+                },
+                tooltip: {
+                    backgroundColor: '#1F3A5F',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const valor = context.raw;
+                            const percent = ((valor / total) * 100).toFixed(1);
+                            return ` ${context.label}: ${fmtBRL(valor)} (${percent}%)`;
+                        }
+                    }
+                }
+            } 
+        }
+    });
+}
+
+function renderDados(c) {
+    document.getElementById('in-nome-titular').value = c.dados.nomeTitular;
+    document.getElementById('in-nasc-titular').value = c.dados.dataNascTitular;
+    document.getElementById('in-prof-titular').value = c.dados.profissaoTitular;
+    document.getElementById('in-tem-conjuge').checked = c.dados.temConjuge;
+    document.getElementById('conjuge-fields').style.display = c.dados.temConjuge ? 'block' : 'none';
+    document.getElementById('in-nome-conjuge').value = c.dados.nomeConjuge;
+    document.getElementById('in-regime').value = c.dados.regimeCasamento;
+    document.getElementById('in-uf').value = c.dados.estado;
+    document.getElementById('in-cotacao').value = c.dados.cotacaoExterior;
+}
+
+function updateClientData(field, value) {
+    const c = getActiveClient();
+    if (field === 'temConjuge') {
+        c.dados[field] = value;
+        document.getElementById('conjuge-fields').style.display = value ? 'block' : 'none';
+    } else {
+        c.dados[field] = value;
+    }
+    save();
+}
+
+/* PATRIMONIO */
+function renderPatrimonio(c) {
+    const body = document.getElementById('body-assets');
+    body.innerHTML = c.ativos.map((a, i) => `
+        <tr>
+            <td><select onchange="updateAsset(${i}, 'tipo', this.value)">
+                <option value="imovel_urbano" ${a.tipo=='imovel_urbano'?'selected':''}>Imóvel Urbano</option>
+                <option value="imovel_rural" ${a.tipo=='imovel_rural'?'selected':''}>Imóvel Rural</option>
+                <option value="investimento" ${a.tipo=='investimento'?'selected':''}>Investimento</option>
+                <option value="veiculo" ${a.tipo=='veiculo'?'selected':''}>Veículo</option>
+            </select></td>
+            <td><input type="text" value="${a.descricao}" onchange="updateAsset(${i}, 'descricao', this.value)"></td>
+            <td><input type="number" value="${a.valorDeclarado}" onchange="updateAsset(${i}, 'valorDeclarado', parseFloat(this.value))"></td>
+            <td><input type="number" value="${a.valorMercado}" onchange="updateAsset(${i}, 'valorMercado', parseFloat(this.value))"></td>
+            <td><input type="number" value="${a.anoAquisicao}" onchange="updateAsset(${i}, 'anoAquisicao', parseInt(this.value))"></td>
+            <td><input type="checkbox" ${a.meacao?'checked':''} onchange="updateAsset(${i}, 'meacao', this.checked)"></td>
+            <td><select onchange="updateAsset(${i}, 'titular', this.value)">
+                <option value="titular" ${a.titular=='titular'?'selected':''}>Titular</option>
+                <option value="conjuge" ${a.titular=='conjuge'?'selected':''}>Cônjuge</option>
+                <option value="ambos" ${a.titular=='ambos'?'selected':''}>Ambos</option>
+            </select></td>
+            <td><button class="btn btn-danger" onclick="removeAsset(${i})">X</button></td>
+        </tr>
+    `).join('');
+    
+    const totalMercado = c.ativos.reduce((s,a) => s + a.valorMercado, 0);
+    document.getElementById('assets-summary').innerHTML = `<strong>Total Mercado: ${fmtBRL(totalMercado)}</strong>`;
+}
+
+function addAsset() {
+    const c = getActiveClient();
+    c.ativos.push({ tipo: 'imovel_urbano', descricao: 'Novo Ativo', valorDeclarado: 0, valorMercado: 0, anoAquisicao: 2024, meacao: true, titular: 'ambos' });
+    renderActiveTab('tab-patrimonio');
+    save();
+}
+
+function updateAsset(idx, field, val) {
+    getActiveClient().ativos[idx][field] = val;
+    save();
+}
+
+function removeAsset(idx) {
+    getActiveClient().ativos.splice(idx, 1);
+    renderActiveTab('tab-patrimonio');
+    save();
+}
+
+/* SUCESSÃO */
+function renderSucessao(c) {
+    const suc = calcularSucessao(c);
+    document.getElementById('suc-titular-detalhe').innerText = fmtBRL(suc.custoTitular);
+    document.getElementById('suc-conjuge-detalhe').innerText = fmtBRL(suc.custoConjuge);
+    document.getElementById('suc-total-final').innerText = fmtBRL(suc.total);
+    
+    document.getElementById('cfg-itcmd').value = (ITCMD_DEFAULT[c.dados.estado] || 0.04) * 100;
+    document.getElementById('cfg-adv').value = c.sucessaoConfig.honorarioAdvogado;
+}
+
+function updateSucCfg(field, val) {
+    getActiveClient().sucessaoConfig[field] = parseFloat(val);
+    renderActiveTab('tab-sucessao');
+    save();
+}
+
+/* EVOLUÇÃO */
+function renderEvolucao(c) {
+    const cfg = c.evolucaoConfig;
+    const jReal = juroRealAA(cfg.juroNominalAA, cfg.inflacaoAA);
+    const taxaMensal = (Math.pow(1 + jReal, 1/12) - 1) * (1 - cfg.fatorTributacaoIR);
+    
+    document.getElementById('ev-juro').value = (cfg.juroNominalAA * 100).toFixed(1);
+    document.getElementById('ev-infla').value = (cfg.inflacaoAA * 100).toFixed(1);
+    document.getElementById('calc-juro-real').innerText = (jReal * 100).toFixed(2) + "% a.a.";
+
+    const recTotal = c.receitas.reduce((s, r) => s + r.valorMensal, 0);
+    const desTotal = c.despesas.reduce((s, d) => s + d.valorMensal, 0);
+    const aporteMensal = recTotal - desTotal;
+
+    let patrim = c.ativos.reduce((s, a) => s + a.valorMercado, 0);
+    const idadeIni = calcularIdade(c.dados.dataNascTitular);
+    
+    let html = '';
+    const labels = [];
+    const dataPoints = [];
+
+    for (let i = 0; i <= (100 - idadeIni); i++) {
+        const idade = idadeIni + i;
+        const ano = new Date().getFullYear() + i;
+        const patrimIni = patrim;
+        
+        const patrimFim = -fv(taxaMensal, 12, aporteMensal, patrimIni);
+        const rendim = patrimFim - patrimIni - (aporteMensal * 12);
+        
+        if (i % 5 === 0 || i < 5) {
+            html += `<tr>
+                <td>${idade}</td>
+                <td>${ano}</td>
+                <td>${fmtBRL(patrimIni)}</td>
+                <td>${fmtBRL(aporteMensal * 12)}</td>
+                <td>${fmtBRL(rendim)}</td>
+                <td>${fmtBRL(patrimFim)}</td>
+            </tr>`;
+        }
+        
+        labels.push(idade);
+        dataPoints.push(patrimFim);
+        patrim = patrimFim;
+        if (patrim < 0) break;
+    }
+    document.getElementById('body-evolucao').innerHTML = html;
+
+    const ctx = document.getElementById('chart-evolucao').getContext('2d');
+    if (window.myChartEv) window.myChartEv.destroy();
+
+    let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(31, 58, 95, 0.2)'); 
+    gradient.addColorStop(1, 'rgba(31, 58, 95, 0.0)'); 
+
+    window.myChartEv = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{ 
+                label: 'Patrimônio Estimado', 
+                data: dataPoints, 
+                borderColor: '#1F3A5F', 
+                borderWidth: 3,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#1F3A5F',
+                pointBorderWidth: 2,
+                pointRadius: 0, 
+                pointHoverRadius: 6, 
+                fill: true, 
+                backgroundColor: gradient,
+                tension: 0.4 
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: { display: false }, 
+                tooltip: {
+                    backgroundColor: '#1F3A5F',
+                    padding: 12,
+                    titleFont: { size: 13, weight: 'normal' },
+                    bodyFont: { size: 14, weight: 'bold' },
+                    displayColors: false,
+                    callbacks: {
+                        title: function(context) { return `Idade: ${context[0].label} anos`; },
+                        label: function(context) { return fmtBRL(context.raw); }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false }, 
+                    title: { display: true, text: 'Idade', font: { size: 12 } }
+                },
+                y: {
+                    border: { display: false },
+                    grid: { 
+                        color: '#e2e8f0',
+                        drawTicks: false,
+                        borderDash: [5, 5] 
+                    },
+                    ticks: {
+                        callback: function(value) { return formatAbreviado(value); },
+                        padding: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateEvCfg(field, val) {
+    getActiveClient().evolucaoConfig[field] = parseFloat(val);
+    renderActiveTab('tab-evolucao');
+    save();
+}
+
+/* FLUXO DE CAIXA */
+function renderFluxo(c) {
+    const renderTable = (type) => {
+        const body = document.getElementById(`body-${type}`);
+        body.innerHTML = c[type].map((item, i) => `
+            <tr>
+                <td><input type="text" value="${item.descricao}" onchange="updateItem('${type}', ${i}, 'descricao', this.value)"></td>
+                <td><input type="number" value="${item.valorMensal}" onchange="updateItem('${type}', ${i}, 'valorMensal', parseFloat(this.value))"></td>
+                <td><button class="btn btn-danger" style="padding: 2px 8px;" onclick="removeItem('${type}', ${i})">X</button></td>
+            </tr>
+        `).join('');
+    };
+    renderTable('receitas');
+    renderTable('despesas');
+}
+
+function addItem(type) {
+    getActiveClient()[type].push({ id: Date.now(), descricao: 'Novo Item', valorMensal: 0 });
+    renderActiveTab('tab-fluxo');
+    save();
+}
+
+function updateItem(type, idx, field, val) {
+    getActiveClient()[type][idx][field] = val;
+    save();
+}
+
+function removeItem(type, idx) {
+    getActiveClient()[type].splice(idx, 1);
+    renderActiveTab('tab-fluxo');
+    save();
+}
+
+/* RISCOS */
+function renderRiscos(c) {
+    const suc = calcularSucessao(c);
+    const jReal = juroRealAA(c.evolucaoConfig.juroNominalAA, c.evolucaoConfig.inflacaoAA);
+    const recTitular = c.receitas.filter(r => r.titular === 'titular').reduce((s,r) => s + r.valorMensal, 0);
+    
+    const riscos = [
+        { nome: 'Morte (Custos Sucessão)', calc: 'Custo Inventário', nec: suc.custoTitular },
+        { nome: 'Invalidez Permanente', calc: 'Renda Titular / Juro Real', nec: (recTitular * 12) / (jReal || 0.01) },
+        { nome: 'Doenças Graves', calc: '12 meses de Despesas', nec: c.despesas.reduce((s,d)=>s+d.valorMensal, 0) * 12 }
+    ];
+
+    document.getElementById('body-riscos').innerHTML = riscos.map(r => `
+        <tr>
+            <td>${r.nome}</td>
+            <td><small>${r.calc}</small></td>
+            <td>${fmtBRL(r.nec)}</td>
+            <td>${fmtBRL(0)}</td>
+            <td class="negative">${fmtBRL(r.nec)}</td>
+            <td><span class="badge badge-danger">CONTRATAR</span></td>
+        </tr>
+    `).join('');
+}
+
+/* ==========================================================================
+   SISTEMA DE ARQUIVOS & PERSISTÊNCIA
+   ========================================================================== */
+
+function save() {
+    localStorage.setItem('planpatr_data_v3', JSON.stringify(state));
+}
+
+function load() {
+    const saved = localStorage.getItem('planpatr_data_v3');
+    if (saved) {
+        state = JSON.parse(saved);
+        if (state.activeClientId) setActiveClient(state.activeClientId);
+        else renderClients();
+    }
+}
+
+function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `planejamento_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            state = JSON.parse(e.target.result);
+            save();
+            location.reload();
+        } catch (err) { alert("Erro ao importar arquivo JSON."); }
+    };
+    reader.readAsText(file);
+}
+
+function deleteClient(id, event) {
+    event.stopPropagation();
+    if (confirm("Deseja realmente excluir este cliente?")) {
+        state.clients = state.clients.filter(c => c.id !== id);
+        if (state.activeClientId === id) state.activeClientId = null;
+        save();
+        renderClients();
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+/* CARREGAR TESTE ESPECIFICAÇÃO */
+function loadTestClient() {
+    const test = {
+        id: "fabiano-delma-test",
+        atualizadoEm: new Date().toISOString(),
+        dados: {
+            nomeTitular: 'FABIANO', dataNascTitular: '1958-06-15', temConjuge: true, nomeConjuge: 'DELMA',
+            regimeCasamento: 'comunhao_parcial', estado: 'MG', cotacaoExterior: 5.18
+        },
+        ativos: [
+            { tipo: 'imovel_rural', descricao: 'Fazenda 140ha', valorDeclarado: 470000, valorMercado: 4000000, anoAquisicao: 2009, meacao: true, titular: 'ambos' },
+            { tipo: 'imovel_urbano', descricao: 'Casa Moradia', valorDeclarado: 1060000, valorMercado: 2000000, anoAquisicao: 2006, meacao: true, titular: 'ambos' },
+            { tipo: 'imovel_urbano', descricao: 'Casa Represa', valorDeclarado: 1152398, valorMercado: 2000000, anoAquisicao: 2003, meacao: true, titular: 'ambos' },
+            { tipo: 'investimento', descricao: 'Investimentos', valorMercado: 3200000, meacao: true, titular: 'ambos' },
+            { tipo: 'veiculo', descricao: 'Haval', valorMercado: 270000, meacao: true, titular: 'ambos' },
+            { tipo: 'imovel_urbano', descricao: 'Prédio Lotes', valorMercado: 2700000, meacao: false, titular: 'titular' },
+            { tipo: 'imovel_urbano', descricao: 'Prédio Delffino', valorMercado: 3000000, meacao: false, titular: 'titular' },
+            { tipo: 'imovel_urbano', descricao: 'Apto 1202', valorMercado: 2200000, meacao: false, titular: 'titular' },
+            { tipo: 'imovel_urbano', descricao: 'Casa Helio', valorMercado: 1600000, meacao: false, titular: 'titular' }
+        ],
+        receitas: [
+            { categoria: 'inss', titular: 'titular', valorMensal: 2800 },
+            { categoria: 'aluguel', titular: 'ambos', valorMensal: 10000 }
+        ],
+        despesas: [],
+        sucessaoConfig: { honorarioAdvogado: 0, taxStateExterior: 0.18 },
+        evolucaoConfig: { juroNominalAA: 0.13, inflacaoAA: 0.04, fatorTributacaoIR: 0.15, idadeFinal: 100 }
+    };
+    state.clients.push(test);
+    setActiveClient(test.id);
+    showToast("Caso de teste Fabiano + Delma carregado!");
+}
+
+// Inicialização
+window.onload = () => {
+    load();
+    if(window.lucide) lucide.createIcons();
+};
+</script>
+
+</body>
+</html>
